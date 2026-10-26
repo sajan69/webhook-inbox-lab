@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { closeSync, lstatSync, openSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import { MAX_BODY_BYTES, type VerifiedDelivery } from './auth.js';
+import { initializeSchema, receiptColumns, SCHEMA_VERSION, type EventState } from './schema.js';
 
 export class StorageError extends Error {
   constructor() { super('Inbox unavailable'); }
@@ -17,7 +18,12 @@ export interface Receipt {
   bodyHash: string;
   signedAt: number;
   receivedAt: number;
-  state: 'pending';
+  state: EventState;
+  attempts: number;
+  availableAt: number;
+  leaseUntil: number | null;
+  lastError: string | null;
+  completedAt: number | null;
 }
 
 /** Trusted internal API: callers must authenticate the delivery before enqueueing. */
@@ -39,23 +45,9 @@ export class Inbox {
       db = new DatabaseSync(path, { timeout: 5000, allowExtension: false });
       const version = db.prepare('PRAGMA user_version').get()?.user_version;
       const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
-      if (version !== 1 && (version !== 0 || tables.length !== 0)) throw new StorageError();
+      if (![1, SCHEMA_VERSION].includes(version as number) && (version !== 0 || tables.length !== 0)) throw new StorageError();
       db.exec('PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA trusted_schema=OFF;');
-      if (version === 0) db.exec(`
-        BEGIN IMMEDIATE;
-        CREATE TABLE IF NOT EXISTS inbox (
-          id TEXT PRIMARY KEY NOT NULL,
-          body BLOB NOT NULL,
-          body_hash TEXT NOT NULL,
-          signed_at INTEGER NOT NULL,
-          received_at INTEGER NOT NULL,
-          state TEXT NOT NULL DEFAULT 'pending' CHECK (state='pending')
-        ) STRICT;
-        PRAGMA user_version=1;
-        COMMIT;
-      `);
-      // Fail closed when a version number was set on an incompatible schema.
-      db.prepare('SELECT id, body, body_hash, signed_at, received_at, state FROM inbox LIMIT 0').all();
+      initializeSchema(db);
       this.db = db;
     } catch {
       try { db?.close(); } catch { /* Preserve the sanitized error. */ }
@@ -80,8 +72,8 @@ export class Inbox {
       }
       const count = this.db.prepare('SELECT count(*) AS n FROM inbox').get()?.n;
       if (typeof count !== 'number' || count >= this.maxEvents) throw new CapacityError();
-      this.db.prepare('INSERT INTO inbox(id,body,body_hash,signed_at,received_at) VALUES(?,?,?,?,?)')
-        .run(delivery.id, delivery.body, hash, delivery.timestamp, receivedAt);
+      this.db.prepare('INSERT INTO inbox(id,body,body_hash,signed_at,received_at,available_at) VALUES(?,?,?,?,?,?)')
+        .run(delivery.id, delivery.body, hash, delivery.timestamp, receivedAt, receivedAt);
       this.db.exec('COMMIT'); transaction = false;
       return 'inserted';
     } catch (e) {
@@ -94,8 +86,7 @@ export class Inbox {
   inspect(limit = 100): Receipt[] {
     if (!Number.isInteger(limit) || limit < 1 || limit > 1000) throw new Error('Invalid inspection limit');
     try {
-      return this.db.prepare(`SELECT id, body_hash AS bodyHash, signed_at AS signedAt,
-        received_at AS receivedAt, state FROM inbox ORDER BY received_at,id LIMIT ?`).all(limit) as unknown as Receipt[];
+      return this.db.prepare(`SELECT ${receiptColumns} FROM inbox ORDER BY received_at,id LIMIT ?`).all(limit) as unknown as Receipt[];
     } catch { throw new StorageError(); }
   }
 
@@ -112,11 +103,10 @@ export function inspectInbox(path: string, limit = 100): { total: number; events
   let db: DatabaseSync | undefined;
   try {
     db = new DatabaseSync(path, { readOnly: true, allowExtension: false, timeout: 1000 });
-    if (db.prepare('PRAGMA user_version').get()?.user_version !== 1) throw new StorageError();
+    if (db.prepare('PRAGMA user_version').get()?.user_version !== SCHEMA_VERSION) throw new StorageError();
     db.exec('BEGIN');
     const total = db.prepare('SELECT count(*) AS n FROM inbox').get()?.n as number;
-    const events = db.prepare(`SELECT id, body_hash AS bodyHash, signed_at AS signedAt,
-      received_at AS receivedAt, state FROM inbox ORDER BY received_at,id LIMIT ?`).all(limit) as unknown as Receipt[];
+    const events = db.prepare(`SELECT ${receiptColumns} FROM inbox ORDER BY received_at,id LIMIT ?`).all(limit) as unknown as Receipt[];
     db.exec('COMMIT');
     return { total, events };
   } catch { throw new StorageError(); }

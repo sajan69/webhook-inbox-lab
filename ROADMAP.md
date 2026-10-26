@@ -15,6 +15,7 @@ The finish line and full acceptance checklist are in README.md.
 - Committed rows survive forced process termination in a local subprocess test.
 - A synthetic intake demo checks 20 concurrent deliveries plus conflict, tamper and stale rejection.
 - CLI serving and read-only metadata inspection are available.
+- Version-one intake databases migrate transactionally to the worker-ready schema; failed copy/swap rolls back.
 
 ## Next
 
@@ -23,4 +24,4 @@ The finish line and full acceptance checklist are in README.md.
 
 ## Verification
 
-`npm test` builds the project and runs Node's test runner. Current 29 authentication/storage/HTTP/CLI/demo checks pass locally on Node 24.22.1. CI results must be checked before promoting implementation to the default branch.
+`npm test` builds the project and runs Node's test runner. Current 32 authentication/storage/HTTP/CLI/demo/migration checks pass locally on Node 24.22.1. CI results must be checked before promoting implementation to the default branch.
