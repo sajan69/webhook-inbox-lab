@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';
 import { DatabaseSync } from 'node:sqlite';
-import { Inbox, CapacityError, ConflictError, StorageError } from '../src/inbox.js';
+import { Inbox, inspectInbox, CapacityError, ConflictError, StorageError } from '../src/inbox.js';
 
 const delivery = { id: 'event_1', timestamp: 1_800_000_000, body: Buffer.from('{"type":"test"}') };
 function location() {
@@ -89,5 +89,40 @@ test('independent concurrent processes converge on one durable event', async () 
     assert.equal(results.filter(x => x === 'inserted').length, 1);
     assert.equal(results.filter(x => x === 'duplicate').length, 7);
     const inbox = new Inbox(temp.path); assert.equal(inbox.count(), 1); inbox.close();
+  } finally { temp.clean(); }
+});
+
+test('committed row survives abrupt process termination without close', async () => {
+  const temp = location();
+  try {
+    const module = new URL('../src/inbox.js', import.meta.url).href;
+    await new Promise<void>((resolve, reject) => {
+      const child = spawn(process.execPath, ['--input-type=module', '-e', `
+        import { Inbox } from ${JSON.stringify(module)};
+        const inbox = new Inbox(process.argv[1]);
+        inbox.enqueue({id:'crash_event',timestamp:1800000000,body:Buffer.from('{}')});
+        console.log('committed');
+        setInterval(() => {}, 1000);
+      `, temp.path], { stdio: ['ignore', 'pipe', 'pipe'] });
+      let committed = false;
+      child.stdout.once('data', () => { committed = true; child.kill('SIGKILL'); });
+      child.on('error', reject);
+      child.on('exit', (_code, signal) => committed && signal === 'SIGKILL' ? resolve() : reject(new Error('Child did not reach commit')));
+    });
+    const inbox = new Inbox(temp.path);
+    assert.equal(inbox.count(), 1);
+    assert.equal(inbox.inspect()[0]?.id, 'crash_event');
+    inbox.close();
+  } finally { temp.clean(); }
+});
+test('read-only inspection snapshots counts without creating missing databases', () => {
+  const temp = location();
+  try {
+    assert.throws(() => inspectInbox(temp.path), StorageError);
+    const inbox = new Inbox(temp.path); inbox.enqueue(delivery);
+    const result = inspectInbox(temp.path, 1);
+    assert.equal(result.total, 1); assert.equal(result.events.length, 1);
+    assert.equal(inbox.count(), 1); inbox.close();
+    assert.throws(() => inspectInbox(temp.path, 0));
   } finally { temp.clean(); }
 });

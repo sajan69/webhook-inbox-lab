@@ -105,3 +105,20 @@ export class Inbox {
   }
   close(): void { this.db.close(); }
 }
+
+/** Does not create a missing database, migrate a schema or expose payloads. */
+export function inspectInbox(path: string, limit = 100): { total: number; events: Receipt[] } {
+  if (!Number.isInteger(limit) || limit < 1 || limit > 1000) throw new Error('Invalid inspection limit');
+  let db: DatabaseSync | undefined;
+  try {
+    db = new DatabaseSync(path, { readOnly: true, allowExtension: false, timeout: 1000 });
+    if (db.prepare('PRAGMA user_version').get()?.user_version !== 1) throw new StorageError();
+    db.exec('BEGIN');
+    const total = db.prepare('SELECT count(*) AS n FROM inbox').get()?.n as number;
+    const events = db.prepare(`SELECT id, body_hash AS bodyHash, signed_at AS signedAt,
+      received_at AS receivedAt, state FROM inbox ORDER BY received_at,id LIMIT ?`).all(limit) as unknown as Receipt[];
+    db.exec('COMMIT');
+    return { total, events };
+  } catch { throw new StorageError(); }
+  finally { try { db?.close(); } catch { /* Preserve sanitized errors. */ } }
+}

@@ -1,0 +1,11 @@
+{
+  "dataset": "Synthetic local intake; one event delivered 20 times concurrently",
+  "acceptedNew": 1,
+  "acceptedDuplicate": 19,
+  "conflictingBodyStatus": 409,
+  "tamperedIdStatus": 401,
+  "staleAttemptStatus": 401,
+  "durableRowsAfterReopen": 1,
+  "state": "pending",
+  "limitations": "Intake only. Pending events have not been processed; this does not demonstrate worker recovery or exactly-once effects."
+}

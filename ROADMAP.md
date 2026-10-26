@@ -12,12 +12,15 @@ The finish line and full acceptance checklist are in README.md.
 - Bounded SQLite intake commits before returning, rejects conflicting IDs and preserves exact duplicates.
 - Loopback HTTP intake with bounded raw-body reads, strict JSON event shape, duplicate-header rejection and sanitized errors.
 - Eight concurrent processes converge on one insertion and seven duplicate acknowledgments.
+- Committed rows survive forced process termination in a local subprocess test.
+- A synthetic intake demo checks 20 concurrent deliveries plus conflict, tamper and stale rejection.
+- CLI serving and read-only metadata inspection are available.
 
 ## Next
 
 - Leased worker, transactional sample ledger, retries and recovery tests.
-- Reproducible integrated demo, measurements and complete technical documentation.
+- Extend the intake demo through processing/recovery, add measurements and complete technical documentation.
 
 ## Verification
 
-`npm test` builds the project and runs Node's test runner. Current 24 authentication/storage/HTTP checks pass locally on Node 24.22.1. CI results must be checked before promoting implementation to the default branch.
+`npm test` builds the project and runs Node's test runner. Current 29 authentication/storage/HTTP/CLI/demo checks pass locally on Node 24.22.1. CI results must be checked before promoting implementation to the default branch.
