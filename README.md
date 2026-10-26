@@ -6,7 +6,7 @@ Webhook delivery can include duplicates, delays and reordered events. This proje
 
 ## Status
 
-Active: authenticated durable intake, leased processing, bounded retries/dead letters and the transactional sample ledger are implemented. Reproducible workload measurements and final architecture documentation remain. No throughput benchmark or production validation exists yet.
+Complete for the bounded local MVP: authenticated durable intake, leased processing, bounded retries/dead letters, transactional sample ledger, reproducible failure drills and measured workload. Live provider traffic and production deployment remain outside the validated scope.
 
 ## Design and scope
 
@@ -27,8 +27,8 @@ Only synthetic loopback traffic is in scope. No provider account, real signing s
 - [x] Demonstrate restart after enqueue, expired-lease recovery, bounded retries and retry exhaustion.
 - [x] Demonstrate that duplicate or reordered delivery cannot repeat the sample ledger effect; document ordering semantics.
 - [x] Provide reproducible intake/processing demos and automated tests (CI validates both).
-- [ ] Record a measured workload with its method, environment and actual results.
-- [ ] Document setup, architecture, security decisions and limitations.
+- [x] Record a measured workload with its method, environment and actual results.
+- [x] Document setup, architecture, security decisions and limitations.
 
 ## Run the intake demo
 
@@ -70,8 +70,10 @@ Use a private local directory. Payloads are stored unencrypted and must be synth
 
 ## Validation and technical details
 
-Local validation on Node 24.22.1: 52 automated tests cover authentication, migration, persistence, leases/retries, transactional effects, concurrent processes, abrupt process termination, HTTP boundaries, CLI behavior and both demos. CI builds TypeScript, runs tests and executes both demos on Node 24. Live provider integration and physical power-loss behavior have not been tested.
+Local validation on Node 24.22.1: 54 automated tests cover authentication, migration, persistence, leases/retries, transactional effects, concurrent processes, abrupt process termination, HTTP boundaries, CLI behavior and both demos. CI builds TypeScript, runs tests, executes both demos and verifies a small benchmark workload on Node 24. Live provider integration and physical power-loss behavior have not been tested.
 
+- [Architecture and trust boundaries](docs/ARCHITECTURE.md)
+- [Evaluation method, actual measurements and limitations](docs/EVALUATION.md)
 - [Authentication and replay boundaries](docs/AUTHENTICATION.md)
 - [Transactions, storage and durability limits](docs/STORAGE.md)
 - [Worker states, ledger semantics and recovery](docs/WORKER.md)
@@ -80,13 +82,13 @@ Local validation on Node 24.22.1: 52 automated tests cover authentication, migra
 - [Recorded processing drill result](docs/reports/processing.json)
 - [Implementation status and remaining work](ROADMAP.md)
 
-## Implementation order
+## Measure the local workload
 
-1. Establish the TypeScript package, ignore rules and test/CI foundation.
-2. Implement and test request authentication and durable intake.
-3. Implement and test leasing, retries and transactional sample processing.
-4. Add the integrated demo, inspection commands and measurements.
-5. Verify the complete workflow and document its guarantees and remaining limitations.
+```sh
+npm run benchmark -- 500 3
+```
+
+This measures sequential verification/intake, duplicate handling and processing using fresh temporary databases. It does not measure HTTP latency. The [evaluation report](docs/EVALUATION.md) records the workload, environment, individual results and caveats.
 
 ## Boundaries
 

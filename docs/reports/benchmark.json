@@ -1,0 +1,59 @@
+{
+  "generatedAt": "2026-10-26T13:13:39.914Z",
+  "environment": {
+    "node": "v24.22.1",
+    "sqlite": "3.53.4",
+    "package": "0.2.0",
+    "platform": "linux",
+    "arch": "x64",
+    "kernel": "6.18.55",
+    "availableParallelism": 8
+  },
+  "workload": {
+    "uniqueEvents": 500,
+    "repeatedIdenticalDeliveries": 500,
+    "uniqueBodyBytes": 40890,
+    "repeats": 3,
+    "signature": "HMAC v1; pre-generated signatures with one fixed verification timestamp per workload",
+    "storage": "Fresh temporary file per repeat; WAL; synchronous=FULL; no pre-populated ledger"
+  },
+  "method": "Single process, sequential calls. Insert/duplicate times include signature verification and complete enqueue transactions. Processing includes claim plus effect/completion transactions and one idle check. Generation, schema setup, inspection and close are outside timers. No HTTP or concurrent sender is measured.",
+  "runs": [
+    {
+      "repeat": 1,
+      "inserted": 500,
+      "duplicates": 500,
+      "processed": 500,
+      "insertMs": 356.204239,
+      "duplicateMs": 12.751670999999988,
+      "processingMs": 496.078347,
+      "databaseBytesAfterClose": 200704
+    },
+    {
+      "repeat": 2,
+      "inserted": 500,
+      "duplicates": 500,
+      "processed": 500,
+      "insertMs": 266.08683799999994,
+      "duplicateMs": 11.99797199999989,
+      "processingMs": 479.62872600000014,
+      "databaseBytesAfterClose": 200704
+    },
+    {
+      "repeat": 3,
+      "inserted": 500,
+      "duplicates": 500,
+      "processed": 500,
+      "insertMs": 289.68090699999993,
+      "duplicateMs": 10.907330000000002,
+      "processingMs": 442.93012499999986,
+      "databaseBytesAfterClose": 200704
+    }
+  ],
+  "mediansMs": {
+    "insert": 289.68090699999993,
+    "duplicate": 11.99797199999989,
+    "processing": 479.62872600000014
+  },
+  "limitations": "Synthetic functional microbenchmark on a shared host and temporary filesystem with unknown backing storage/cache behavior. No competing implementation baseline, HTTP latency, production SLA or physical durability claim. Sequential phase order and warm caches can affect results."
+}

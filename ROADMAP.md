@@ -1,6 +1,6 @@
 # Implementation status
 
-Status: active.
+Status: complete for the bounded local MVP.
 
 The finish line and full acceptance checklist are in README.md.
 
@@ -23,11 +23,12 @@ The finish line and full acceptance checklist are in README.md.
 - Eight concurrent claimers produce one lease; concurrent workers deduplicate eight business deliveries.
 - The integrated processing drill verifies eight events through real HTTP, restart, retry exhaustion and virtual-clock recovery.
 
-## Next
+## Finish line
 
-- Add measured workload results with method/environment and actual outcomes.
-- Complete architecture documentation and final integrated acceptance checks.
+All README acceptance criteria are implemented and exercised locally. The reproducible workload report records real sequential measurements with environment and limitations. Architecture, protocol, migration, storage and worker guarantees are documented. No blocking item remains for the stated local scope.
+
+Live provider integration, internet hosting, multi-tenancy, automatic retention/redrive, distributed queues and external exactly-once effects are outside scope; completion does not assert those capabilities.
 
 ## Verification
 
-`npm test` builds the project and runs Node's test runner. Current 52 authentication/storage/HTTP/CLI/demo/migration/worker checks pass locally on Node 24.22.1. CI results must be checked before promoting implementation to the default branch.
+`npm test` builds the project and runs Node's test runner. Current 54 authentication/storage/HTTP/CLI/demo/migration/worker/benchmark checks pass locally on Node 24.22.1. The CI workflow checks the same test suite, both runnable demos and a small benchmark workload before implementation is promoted to the default branch.

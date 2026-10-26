@@ -1,6 +1,6 @@
 {
   "name": "webhook-inbox-lab",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -11,7 +11,8 @@
     "test": "npm run build && node --test dist/test/*.test.js",
     "start": "node dist/src/cli.js",
     "demo:intake": "npm run build && node dist/src/demo.js",
-    "demo:processing": "npm run build && node dist/src/processing-demo.js"
+    "demo:processing": "npm run build && node dist/src/processing-demo.js",
+    "benchmark": "npm run build && node dist/src/benchmark.js"
   },
   "devDependencies": {
     "@types/node": "24.19.2",

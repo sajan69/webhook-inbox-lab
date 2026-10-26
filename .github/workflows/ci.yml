@@ -15,3 +15,4 @@ jobs:
       - run: npm test
       - run: npm run demo:intake
       - run: npm run demo:processing
+      - run: npm run benchmark -- 25 1
