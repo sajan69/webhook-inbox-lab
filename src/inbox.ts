@@ -4,6 +4,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { MAX_BODY_BYTES, type VerifiedDelivery } from './auth.js';
 import { initializeSchema, receiptColumns, SCHEMA_VERSION, type EventState } from './schema.js';
 import { claimEvent, failEvent, LeaseError, type FailureCode, type Lease } from './leases.js';
+import { applyLedger, LedgerError } from './ledger.js';
 
 export class StorageError extends Error {
   constructor() { super('Inbox unavailable'); }
@@ -105,23 +106,29 @@ export class Inbox {
       return result;
     } catch (error) {
       if (active) { try { this.db.exec('ROLLBACK'); } catch { /* Preserve original error. */ } }
-      if (error instanceof LeaseError) throw error;
+      if (error instanceof LeaseError || error instanceof LedgerError) throw error;
       throw new StorageError();
     }
   }
 
-  claim(now = Math.floor(Date.now() / 1000), leaseSeconds = 30): Lease | null {
-    return this.transaction(() => claimEvent(this.db, now, leaseSeconds));
+  claim(now?: number, leaseSeconds = 30): Lease | null {
+    return this.transaction(() => claimEvent(this.db, now ?? Math.floor(Date.now() / 1000), leaseSeconds));
   }
 
-  fail(lease: Lease, code: FailureCode, now = Math.floor(Date.now() / 1000)): 'retry' | 'dead' {
-    return this.transaction(() => failEvent(this.db, lease, code, now));
+  fail(lease: Lease, code: FailureCode, now?: number): 'retry' | 'dead' {
+    return this.transaction(() => failEvent(this.db, lease, code, now ?? Math.floor(Date.now() / 1000)));
+  }
+
+  completeLedger(lease: Lease, now?: number): 'applied' | 'duplicate' {
+    return this.transaction(() => applyLedger(this.db, lease, now ?? Math.floor(Date.now() / 1000)));
   }
   close(): void { this.db.close(); }
 }
 
 /** Does not create a missing database, migrate a schema or expose payloads. */
-export function inspectInbox(path: string, limit = 100): { total: number; events: Receipt[] } {
+export function inspectInbox(path: string, limit = 100): {
+  total: number; events: Receipt[]; ledger: { entries: number; totalUnits: number };
+} {
   if (!Number.isInteger(limit) || limit < 1 || limit > 1000) throw new Error('Invalid inspection limit');
   let db: DatabaseSync | undefined;
   try {
@@ -130,8 +137,9 @@ export function inspectInbox(path: string, limit = 100): { total: number; events
     db.exec('BEGIN');
     const total = db.prepare('SELECT count(*) AS n FROM inbox').get()?.n as number;
     const events = db.prepare(`SELECT ${receiptColumns} FROM inbox ORDER BY received_at,id LIMIT ?`).all(limit) as unknown as Receipt[];
+    const ledger = db.prepare('SELECT count(*) AS entries, COALESCE(sum(amount),0) AS totalUnits FROM ledger').get() as unknown as { entries: number; totalUnits: number };
     db.exec('COMMIT');
-    return { total, events };
+    return { total, events, ledger: { ...ledger } };
   } catch { throw new StorageError(); }
   finally { try { db?.close(); } catch { /* Preserve sanitized errors. */ } }
 }

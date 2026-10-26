@@ -17,12 +17,14 @@ The finish line and full acceptance checklist are in README.md.
 - CLI serving and read-only metadata inspection are available.
 - Version-one intake databases migrate transactionally to the worker-ready schema; failed copy/swap rolls back.
 - Atomic claims use fresh lease tokens, reject stale ownership, persist backoff and bound failed/expired claims to five attempts.
+- The sample ledger validates immutable business keys and commits effects with completion; worker failures are sanitized.
+- Bounded worker batches are available through the CLI.
 
 ## Next
 
-- Leased worker, transactional sample ledger, retries and recovery tests.
+- Complete subprocess crash and concurrent-worker verification.
 - Extend the intake demo through processing/recovery, add measurements and complete technical documentation.
 
 ## Verification
 
-`npm test` builds the project and runs Node's test runner. Current 37 authentication/storage/HTTP/CLI/demo/migration/lease checks pass locally on Node 24.22.1. CI results must be checked before promoting implementation to the default branch.
+`npm test` builds the project and runs Node's test runner. Current 45 authentication/storage/HTTP/CLI/demo/migration/worker checks pass locally on Node 24.22.1. CI results must be checked before promoting implementation to the default branch.
