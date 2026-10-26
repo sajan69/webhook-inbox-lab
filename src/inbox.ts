@@ -3,6 +3,7 @@ import { closeSync, lstatSync, openSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import { MAX_BODY_BYTES, type VerifiedDelivery } from './auth.js';
 import { initializeSchema, receiptColumns, SCHEMA_VERSION, type EventState } from './schema.js';
+import { claimEvent, failEvent, LeaseError, type FailureCode, type Lease } from './leases.js';
 
 export class StorageError extends Error {
   constructor() { super('Inbox unavailable'); }
@@ -93,6 +94,28 @@ export class Inbox {
   count(): number {
     try { return this.db.prepare('SELECT count(*) AS n FROM inbox').get()?.n as number; }
     catch { throw new StorageError(); }
+  }
+
+  private transaction<T>(operation: () => T): T {
+    let active = false;
+    try {
+      this.db.exec('BEGIN IMMEDIATE'); active = true;
+      const result = operation();
+      this.db.exec('COMMIT'); active = false;
+      return result;
+    } catch (error) {
+      if (active) { try { this.db.exec('ROLLBACK'); } catch { /* Preserve original error. */ } }
+      if (error instanceof LeaseError) throw error;
+      throw new StorageError();
+    }
+  }
+
+  claim(now = Math.floor(Date.now() / 1000), leaseSeconds = 30): Lease | null {
+    return this.transaction(() => claimEvent(this.db, now, leaseSeconds));
+  }
+
+  fail(lease: Lease, code: FailureCode, now = Math.floor(Date.now() / 1000)): 'retry' | 'dead' {
+    return this.transaction(() => failEvent(this.db, lease, code, now));
   }
   close(): void { this.db.close(); }
 }

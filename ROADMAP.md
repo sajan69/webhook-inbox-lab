@@ -16,6 +16,7 @@ The finish line and full acceptance checklist are in README.md.
 - A synthetic intake demo checks 20 concurrent deliveries plus conflict, tamper and stale rejection.
 - CLI serving and read-only metadata inspection are available.
 - Version-one intake databases migrate transactionally to the worker-ready schema; failed copy/swap rolls back.
+- Atomic claims use fresh lease tokens, reject stale ownership, persist backoff and bound failed/expired claims to five attempts.
 
 ## Next
 
@@ -24,4 +25,4 @@ The finish line and full acceptance checklist are in README.md.
 
 ## Verification
 
-`npm test` builds the project and runs Node's test runner. Current 32 authentication/storage/HTTP/CLI/demo/migration checks pass locally on Node 24.22.1. CI results must be checked before promoting implementation to the default branch.
+`npm test` builds the project and runs Node's test runner. Current 37 authentication/storage/HTTP/CLI/demo/migration/lease checks pass locally on Node 24.22.1. CI results must be checked before promoting implementation to the default branch.
