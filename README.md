@@ -2,11 +2,7 @@
 
 A local webhook receiver for exploring authenticated delivery, durable intake and safe retries.
 
-Webhook delivery can include duplicates, delays and reordered events. This project will demonstrate how to acknowledge an authenticated event only after storing it, then process it with explicit retry and recovery behavior.
-
-## Status
-
-Complete for the bounded local MVP: authenticated durable intake, leased processing, bounded retries/dead letters, transactional sample ledger, reproducible failure drills and measured workload. Live provider traffic and production deployment remain outside the validated scope.
+Webhook delivery can include duplicates, delays and reordered events. The receiver acknowledges an authenticated event only after storing it, then processes it with explicit retry and recovery behavior.
 
 ## Design and scope
 
@@ -18,17 +14,6 @@ Complete for the bounded local MVP: authenticated durable intake, leased process
 - Local CLI demo and minimal read-only queue inspection.
 
 Only synthetic loopback traffic is in scope. No provider account, real signing secret, cloud deployment, payment or outbound callback service is required.
-
-## Acceptance criteria
-
-- [x] Verify the current Standard Webhooks specification and library behavior; document exact validation and replay boundaries.
-- [x] Test valid, tampered, stale and malformed requests, payload limits and secret rotation.
-- [x] Demonstrate durable acknowledgment, concurrent duplicates and conflicting reuse of an authenticated event ID.
-- [x] Demonstrate restart after enqueue, expired-lease recovery, bounded retries and retry exhaustion.
-- [x] Demonstrate that duplicate or reordered delivery cannot repeat the sample ledger effect; document ordering semantics.
-- [x] Provide reproducible intake/processing demos and automated tests (CI validates both).
-- [x] Record a measured workload with its method, environment and actual results.
-- [x] Document setup, architecture, security decisions and limitations.
 
 ## Run the intake demo
 
@@ -80,7 +65,6 @@ Local validation on Node 24.22.1: 54 automated tests cover authentication, migra
 - [HTTP contract and resource limits](docs/HTTP.md)
 - [Recorded synthetic intake result](docs/reports/intake.json)
 - [Recorded processing drill result](docs/reports/processing.json)
-- [Implementation status and remaining work](ROADMAP.md)
 
 ## Measure the local workload
 
