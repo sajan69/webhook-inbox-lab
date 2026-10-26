@@ -10,7 +10,8 @@
     "build": "tsc -p tsconfig.json",
     "test": "npm run build && node --test dist/test/*.test.js",
     "start": "node dist/src/cli.js",
-    "demo:intake": "npm run build && node dist/src/demo.js"
+    "demo:intake": "npm run build && node dist/src/demo.js",
+    "demo:processing": "npm run build && node dist/src/processing-demo.js"
   },
   "devDependencies": {
     "@types/node": "24.19.2",

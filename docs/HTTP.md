@@ -11,7 +11,7 @@ Authenticated event bodies must be JSON objects with:
 - `type`: 1–100 ASCII letters, digits, underscores or dot-delimited segments; no empty segments.
 - `data`: a JSON object.
 
-Other fields are retained as part of the raw body. No business schema is enforced yet. Parsing uses native `JSON.parse`, including its last-value behavior for duplicate object keys. Consumers must not interpret unvalidated payload fields as commands or URLs. The forthcoming sample ledger handler must enforce its own business schema.
+Other fields are retained as part of the raw body. Intake does not enforce the ledger business schema. Parsing uses native `JSON.parse`, including its last-value behavior for duplicate object keys. Consumers must not interpret unvalidated payload fields as commands or URLs. The sample ledger handler enforces its own business schema during processing; acknowledged events may become dead letters. See WORKER.md.
 
 Successful new intake returns 202; an exact duplicate returns 200. Invalid signatures/freshness/metadata return 401 with the same generic response. Authenticated invalid event content returns 422, conflicting IDs 409, oversized bodies 413 and unsupported media 415. Storage or capacity failure returns retryable 503. Responses never echo request values. They use `no-store` and `nosniff`.
 

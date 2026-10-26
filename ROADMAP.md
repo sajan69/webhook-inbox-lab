@@ -21,11 +21,13 @@ The finish line and full acceptance checklist are in README.md.
 - Bounded worker batches are available through the CLI.
 - Subprocess SIGKILL tests cover abandoned claims, uncommitted effects and committed completion.
 - Eight concurrent claimers produce one lease; concurrent workers deduplicate eight business deliveries.
+- The integrated processing drill verifies eight events through real HTTP, restart, retry exhaustion and virtual-clock recovery.
 
 ## Next
 
-- Extend the intake demo through processing/recovery, add measurements and complete technical documentation.
+- Add measured workload results with method/environment and actual outcomes.
+- Complete architecture documentation and final integrated acceptance checks.
 
 ## Verification
 
-`npm test` builds the project and runs Node's test runner. Current 50 authentication/storage/HTTP/CLI/demo/migration/worker checks pass locally on Node 24.22.1. CI results must be checked before promoting implementation to the default branch.
+`npm test` builds the project and runs Node's test runner. Current 52 authentication/storage/HTTP/CLI/demo/migration/worker checks pass locally on Node 24.22.1. CI results must be checked before promoting implementation to the default branch.

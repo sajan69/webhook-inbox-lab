@@ -6,7 +6,7 @@ Webhook delivery can include duplicates, delays and reordered events. This proje
 
 ## Status
 
-Active: authenticated durable intake is implemented. The worker, retry/dead-letter flow and transactional ledger handler remain to be built. Events currently stay pending. No throughput benchmark or production validation exists yet.
+Active: authenticated durable intake, leased processing, bounded retries/dead letters and the transactional sample ledger are implemented. Reproducible workload measurements and final architecture documentation remain. No throughput benchmark or production validation exists yet.
 
 ## Design and scope
 
@@ -24,9 +24,9 @@ Only synthetic loopback traffic is in scope. No provider account, real signing s
 - [x] Verify the current Standard Webhooks specification and library behavior; document exact validation and replay boundaries.
 - [x] Test valid, tampered, stale and malformed requests, payload limits and secret rotation.
 - [x] Demonstrate durable acknowledgment, concurrent duplicates and conflicting reuse of an authenticated event ID.
-- [ ] Demonstrate restart after enqueue, expired-lease recovery, bounded retries and retry exhaustion.
-- [ ] Demonstrate that duplicate or reordered delivery cannot repeat the sample ledger effect; document ordering semantics.
-- [ ] Provide a reproducible local demo, automated tests and passing CI.
+- [x] Demonstrate restart after enqueue, expired-lease recovery, bounded retries and retry exhaustion.
+- [x] Demonstrate that duplicate or reordered delivery cannot repeat the sample ledger effect; document ordering semantics.
+- [x] Provide reproducible intake/processing demos and automated tests (CI validates both).
 - [ ] Record a measured workload with its method, environment and actual results.
 - [ ] Document setup, architecture, security decisions and limitations.
 
@@ -38,9 +38,12 @@ Requires Node.js 24.22+ (24.x) and npm. No AWS account, webhook provider or real
 npm ci --ignore-scripts
 npm test
 npm run demo:intake
+npm run demo:processing
 ```
 
 The demo creates a temporary database and random signing key, sends synthetic requests to an ephemeral loopback port, verifies the results, then removes its data. Expected results: one new acknowledgment, 19 duplicates, conflicting-body status 409, tampered-ID and stale-attempt status 401, and one pending row after reopening. These are deterministic functional checks, not throughput measurements.
+
+The processing demo goes further: eight synthetic events finish as five done and three dead letters, with four ledger entries totaling 46 synthetic units. It exercises retries, conflicting business keys, restart and expired-lease recovery using an explicit virtual worker clock. Separate subprocess tests cover forced process termination.
 
 To run a persistent local receiver on port 8787 (POSIX shell):
 
@@ -58,18 +61,23 @@ Read metadata from a second terminal without signing secrets:
 
 ```sh
 npm start -- inspect data/inbox.sqlite 100
+npm start -- work data/inbox.sqlite 100
 ```
+
+The worker processes a bounded batch and exits when no eligible work remains; it does not wait for future retry deadlines. Run it again later to recover expired leases or process due retries. Only validated `ledger.credit` events affect the sample ledger; generic intake acceptance does not imply successful business processing. See [processing semantics](docs/WORKER.md).
 
 Use a private local directory. Payloads are stored unencrypted and must be synthetic. Retained inbox capacity is 10,000 events; no retention or deletion command exists yet.
 
 ## Validation and technical details
 
-Local validation on Node 24.22.1: 29 automated tests cover authentication, persistence, concurrent processes, abrupt process termination, HTTP boundaries, CLI behavior and the integrated intake demo. CI builds TypeScript, runs tests and executes the demo on Node 24. Live provider integration and physical power-loss behavior have not been tested.
+Local validation on Node 24.22.1: 52 automated tests cover authentication, migration, persistence, leases/retries, transactional effects, concurrent processes, abrupt process termination, HTTP boundaries, CLI behavior and both demos. CI builds TypeScript, runs tests and executes both demos on Node 24. Live provider integration and physical power-loss behavior have not been tested.
 
 - [Authentication and replay boundaries](docs/AUTHENTICATION.md)
 - [Transactions, storage and durability limits](docs/STORAGE.md)
+- [Worker states, ledger semantics and recovery](docs/WORKER.md)
 - [HTTP contract and resource limits](docs/HTTP.md)
 - [Recorded synthetic intake result](docs/reports/intake.json)
+- [Recorded processing drill result](docs/reports/processing.json)
 - [Implementation status and remaining work](ROADMAP.md)
 
 ## Implementation order

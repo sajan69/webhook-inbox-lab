@@ -1,0 +1,20 @@
+{
+  "dataset": "Eight synthetic events, one repeated delivery and one duplicate immutable business key",
+  "method": "Real loopback HTTP intake and SQLite reopen; injected faults and virtual worker clock for retries/expiry",
+  "retainedEvents": 8,
+  "completedEvents": 5,
+  "deadLetters": 3,
+  "ledgerEntries": 4,
+  "ledgerTotalUnits": 46,
+  "retryThenSuccessAttempts": 3,
+  "exhaustedAttempts": 5,
+  "recoveredLeaseAttempts": 2,
+  "restartsAfterUnsettledClaim": 1,
+  "simulatedSecondsElapsed": 30,
+  "deadLetterReasons": {
+    "c_business_conflict": "business_conflict",
+    "e_retry_exhausted": "transient_handler_error",
+    "g_invalid_business": "invalid_event"
+  },
+  "limitations": "Synthetic functional drill, not a timing benchmark. This demo reopens after an injected interruption; separate tests use SIGKILL. No external effects or physical power-loss guarantee."
+}
